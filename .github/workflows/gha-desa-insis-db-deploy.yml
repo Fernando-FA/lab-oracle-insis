@@ -1,0 +1,33 @@
+# desa: se despliega solo al integrar en la rama desa.
+name: gha-desa-insis-db-deploy
+on:
+  push:
+    branches: [desa]
+    paths: ["oracle-insis/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: insis-db-desa
+  cancel-in-progress: false
+
+jobs:
+  cd:
+    name: CD · desa
+    runs-on: [self-hosted, insis-db]
+    environment: desa
+    steps:
+      - uses: actions/checkout@v4
+      - name: Desplegar
+        env:
+          INSIS_DEPLOY_PASSWORD: ${{ secrets.INSIS_DEPLOY_PASSWORD }}
+        run: |
+          scripts/lb.sh desa update
+          scripts/lb.sh desa status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-desa-${{ github.run_number }}
+          path: evidencia/desa/

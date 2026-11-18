@@ -1,0 +1,46 @@
+# prod: el merge crea la etiqueta prod-v<VERSION>; el Ing. DevSecOps lanza el despliegue con el ticket de Ivanti.
+name: gha-prod-insis-db-deploy
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+    inputs:
+      ticket:
+        description: Ticket de Ivanti
+        required: true
+
+permissions:
+  contents: write
+  deployments: read
+
+concurrency:
+  group: insis-db-prod
+  cancel-in-progress: false
+
+jobs:
+  etiquetar:
+    name: Etiquetar prod-v<VERSION>
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear etiqueta
+        run: |
+          tag="prod-v$(tr -d '[:space:]' < oracle-insis/VERSION)"
+          remoto=$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)
+          if [ -z "$remoto" ]; then
+            git tag "$tag" "$GITHUB_SHA" && git push origin "$tag"
+            echo "Etiqueta $tag creada en ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$remoto" = "$GITHUB_SHA" ]; then
+            echo "$tag ya apunta a este commit"
+          else
+            echo "::error::$tag ya existe en otro commit: sube oracle-insis/VERSION"; exit 1
+          fi
+
+  desplegar:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/gha-shared-insis-db-deploy.yml
+    with:
+      ambiente: prod
+      ticket: ${{ inputs.ticket }}
+    secrets: inherit

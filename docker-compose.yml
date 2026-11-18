@@ -1,0 +1,25 @@
+# Una base Oracle Free con tres PDBs (DESA, TEST, PROD) que imitan los ambientes de INSIS.
+# Las PDBs y los esquemas se crean con scripts/setup-db.sh (no en el arranque del contenedor).
+name: lab-oracle-insis
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:23.26.3-slim-faststart
+    container_name: lab-oracle-insis
+    restart: unless-stopped
+    ports:
+      - "1530:1521"
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?definir en .env}
+    volumes:
+      - ./db/setup:/setup:ro
+      - oradata:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 60s
+
+volumes:
+  oradata:

@@ -1,0 +1,3 @@
+# Orden de despliegue de los esquemas (el rollback va en orden inverso).
+INSIS_PEOPLE_V10
+INSIS_GEN_CFG_V10

@@ -1,0 +1,36 @@
+-- Se ejecuta como SYSDBA dentro de cada PDB. &1 = clave de INSIS_DEPLOY.
+-- Esquemas que imitan INSIS (sin datos reales) y el usuario de despliegue, que entra a cada esquema por proxy.
+WHENEVER SQLERROR EXIT FAILURE
+SET SERVEROUTPUT ON VERIFY OFF
+DECLARE
+  n NUMBER;
+  PROCEDURE crear(p_user VARCHAR2, p_clave VARCHAR2) IS
+    n NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO n FROM dba_users WHERE username = p_user;
+    IF n = 0 THEN
+      EXECUTE IMMEDIATE 'CREATE USER ' || p_user || ' IDENTIFIED BY "' || p_clave || '" DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS';
+      DBMS_OUTPUT.PUT_LINE(p_user || ': creado');
+    END IF;
+  END;
+BEGIN
+  -- Una PDB creada desde la semilla no tiene el tablespace USERS.
+  SELECT COUNT(*) INTO n FROM dba_tablespaces WHERE tablespace_name = 'USERS';
+  IF n = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE TABLESPACE USERS DATAFILE ''/opt/oracle/oradata/FREE/' ||
+      SYS_CONTEXT('USERENV', 'CON_NAME') || '/users01.dbf'' SIZE 50M AUTOEXTEND ON NEXT 10M';
+  END IF;
+  EXECUTE IMMEDIATE 'ALTER DATABASE DEFAULT TABLESPACE USERS';
+  -- Los esquemas de INSIS tienen una clave aleatoria que nadie usa: se entra por proxy.
+  crear('INSIS_PEOPLE_V10', DBMS_RANDOM.STRING('A', 20) || '_1');
+  crear('INSIS_GEN_CFG_V10', DBMS_RANDOM.STRING('A', 20) || '_1');
+  crear('INSIS_DEPLOY', '&1');
+END;
+/
+ALTER USER INSIS_DEPLOY IDENTIFIED BY "&1";
+GRANT CREATE SESSION TO INSIS_DEPLOY;
+GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE, CREATE PROCEDURE, CREATE TRIGGER, CREATE TYPE, CREATE SYNONYM
+  TO INSIS_PEOPLE_V10, INSIS_GEN_CFG_V10;
+ALTER USER INSIS_PEOPLE_V10 GRANT CONNECT THROUGH INSIS_DEPLOY;
+ALTER USER INSIS_GEN_CFG_V10 GRANT CONNECT THROUGH INSIS_DEPLOY;
+EXIT
