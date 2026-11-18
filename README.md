@@ -42,7 +42,16 @@ ALTER TABLE CFG_COVER ADD (COPAY_PCT NUMBER(5,2));
 
 Reglas de la compuerta: primera línea `--liquibase formatted sql`; cada changeset con `--rollback`; el id empieza con
 la versión del archivo; el archivo está en el `changelog.xml` del esquema; un script ya integrado no se modifica;
-sin `GRANT`, `CREATE/ALTER/DROP USER` ni `ALTER SYSTEM`.
+sin `GRANT`, `CREATE/ALTER/DROP USER` ni `ALTER SYSTEM`. En `code/` (runOnChange) el `--rollback` debe contener la
+versión anterior del objeto: al cambiar el script se actualizan juntos.
+
+## Etiquetas
+
+- **Git:** `test-vX.Y.Z` y `prod-vX.Y.Z`, creadas al integrar en `test` y `prod`. Fijan qué se desplegó; la compuerta
+  de `prod` exige que el contenido sea el de `test-vX.Y.Z` y que ese despliegue haya terminado bien.
+- **Base:** cada despliegue registra en cada esquema una fila `tagDatabase` con el mismo nombre (autor `pipeline`,
+  archivo `pipeline/etiquetas`). No se usa `liquibase tag`, que escribe en la última fila aplicada y se pierde cuando
+  un esquema no tiene cambios o se reaplica un script de `code/`. `gha-prod-insis-db-rollback` vuelve a esa fila.
 
 ## Flujo y aprobaciones
 
