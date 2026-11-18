@@ -63,6 +63,18 @@ for esq in "${esquemas[@]}"; do
   dir="$lb_dir/$esq"
   if [ ! -f "$dir/changelog.xml" ]; then echo "== $esq: sin changelog.xml, se omite"; continue; fi
   log="$salida/$esq.$accion.log"
+  if [[ "$cmd" == rollback* ]]; then
+    # Solo se vuelve a etiquetas registradas por el pipeline (filas tagDatabase). Una etiqueta escrita en otra fila
+    # puede haber quedado después de los cambios que se quieren deshacer y el rollback no haría nada.
+    existe=$(sql -S -L /nolog <<SQL | tr -d '[:space:]'
+$(conectar "$esq")
+set heading off feedback off pagesize 0
+select count(*) from databasechangelog where author = 'pipeline' and id = '$1';
+exit
+SQL
+)
+    [ "$existe" = 1 ] || { echo "!! $esq: $1 no está registrada por el pipeline en este ambiente; no se puede volver a ella" >&2; fallo=1; break; }
+  fi
   envoltura "$esq" "$dir"
   echo "== $amb · $esq · liquibase $accion ${nueva:-${1:-}}"
   sql -S -L /nolog > "$log" 2>&1 <<SQL || true
