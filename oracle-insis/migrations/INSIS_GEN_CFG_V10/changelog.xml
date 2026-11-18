@@ -6,5 +6,6 @@
   <include file="tables/V1.1_US102-copago-cobertura.sql" relativeToChangelogFile="true"/>
   <include file="scripts/V1.2_US102-config-copago.sql" relativeToChangelogFile="true"/>
   <include file="scripts/V1.3_US103-cobertura-dental.sql" relativeToChangelogFile="true"/>
+  <include file="scripts/V1.4_US104-vision.sql" relativeToChangelogFile="true"/>
   <include file="code/R_V_COVER_PRODUCT.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

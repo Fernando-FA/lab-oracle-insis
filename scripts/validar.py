@@ -73,7 +73,7 @@ def main():
             if not (d / inc).exists():
                 error(cl.relative_to(RAIZ), f"incluye {inc}, que no existe")
         for f in sorted(d.rglob("*")):
-            if f.is_dir() or f.name in ("changelog.xml", ".gitkeep"):
+            if f.is_dir() or f.name == "changelog.xml" or f.name.startswith("."):
                 continue
             rel = f.relative_to(d)
             carpeta = rel.parts[0] if len(rel.parts) == 2 else None
