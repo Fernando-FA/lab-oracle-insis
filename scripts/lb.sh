@@ -25,7 +25,7 @@ case "$cmd" in
   validate|status|update|update-sql|future-rollback-sql) args="-changelog-file changelog.xml $*" ;;
   *) echo "Comando no soportado: $cmd" >&2; exit 2 ;;
 esac
-[ "$cmd" = status ] && args="$args -verbose"
+[ "$cmd" = status ] && args="$args -verbose true"
 
 conectar() { echo "connect $DB_USER[$1]/\"$INSIS_DEPLOY_PASSWORD\"@//$DB_HOST:$DB_PORT/$DB_SERVICE"; }
 
