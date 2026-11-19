@@ -30,12 +30,10 @@ jobs:
         run: |
           [ "$GITHUB_REF" = "refs/heads/$AMB" ] || { echo "::error::Se despliega desde la rama $AMB (se lanzó desde $GITHUB_REF)"; exit 1; }
           [[ "$TICKET" =~ ^[A-Z]{2,6}-?[0-9]{3,}$ ]] || { echo "::error::Ticket de Ivanti inválido: $TICKET"; exit 1; }
-          version=$(tr -d '[:space:]' < oracle-insis/VERSION)
-          tag="$AMB-v$version"
-          [ "$(git rev-parse -q --verify "refs/tags/$tag^{commit}")" = "$GITHUB_SHA" ] \
-            || { echo "::error::$tag no existe o no apunta a la cabeza de $AMB"; exit 1; }
+          version=$(scripts/version.sh de "$AMB" "$GITHUB_SHA") \
+            || { echo "::error::La cabeza de $AMB no tiene etiqueta $AMB-v* (se crea al integrar en $AMB)"; exit 1; }
           if [ "$AMB" = prod ]; then
-            [ "$(git rev-parse "test-v$version^{tree}")" = "$(git rev-parse "$GITHUB_SHA^{tree}")" ] \
+            [ "$(scripts/version.sh certificada "$GITHUB_SHA" || true)" = "$version" ] \
               || { echo "::error::prod no tiene el mismo contenido que test-v$version"; exit 1; }
             dep=$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=test&sha=$(git rev-parse "test-v$version^{commit}")" --jq '.[0].id // empty')
             estado=$([ -n "$dep" ] && gh api "repos/$GITHUB_REPOSITORY/deployments/$dep/statuses" --jq '.[0].state' || true)
