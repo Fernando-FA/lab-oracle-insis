@@ -1,4 +1,4 @@
-# Compuerta de los PR a desa, test y prod.
+# Compuerta de los PR a desa, test y prod. La lógica vive en las plantillas de DevSecOps (versión fija).
 name: gha-pr-insis-db-validate
 on:
   pull_request:
@@ -9,55 +9,7 @@ permissions:
   deployments: read
 
 jobs:
-  reglas:
-    name: Reglas
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-      - name: Promoción entre ramas
-        env:
-          BASE: ${{ github.base_ref }}
-          HEAD: ${{ github.head_ref }}
-        run: |
-          case "$BASE" in
-            desa) [[ "$HEAD" =~ ^(feature/feat|bugfix/bug|hotfix/hot)-[a-z0-9._-]+$ ]] \
-                    || { echo "::error::A desa solo llegan feature/feat-<user>, bugfix/bug-<user> o hotfix/hot-<user> (llegó $HEAD)"; exit 1; } ;;
-            test) [ "$HEAD" = desa ] || { echo "::error::A test solo se promueve desde desa (llegó $HEAD)"; exit 1; } ;;
-            prod) [ "$HEAD" = test ] || { echo "::error::A prod solo se promueve desde test (llegó $HEAD)"; exit 1; } ;;
-          esac
-          echo "$HEAD → $BASE: permitido"
-      - name: Nomenclatura y scripts
-        run: python3 scripts/validar.py "${{ github.base_ref }}"
-      - name: A prod solo llega lo que pasó por test
-        if: github.base_ref == 'prod'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          version=$(scripts/version.sh certificada "$SHA") \
-            || { echo "::error::El contenido de test no corresponde a ninguna etiqueta test-v*: no pasó por test"; exit 1; }
-          tag="test-v$version"
-          dep=$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=test&sha=$(git rev-parse "$tag^{commit}")" --jq '.[0].id // empty')
-          estado=$([ -n "$dep" ] && gh api "repos/$GITHUB_REPOSITORY/deployments/$dep/statuses" --jq '.[0].state' || true)
-          [ "$estado" = success ] || { echo "::error::$tag no tiene un despliegue exitoso en test (estado: ${estado:-ninguno})"; exit 1; }
-          echo "$tag desplegado en test y con el mismo contenido: OK"
-
-  plan:
-    name: Plan en desa
-    needs: reglas
-    # Solo PR del mismo repo: el runner es propio y no debe ejecutar código de forks.
-    if: github.base_ref == 'desa' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, insis-db]
-    environment: desa-pr
-    steps:
-      - uses: actions/checkout@v4
-      - name: Pendientes y SQL que se ejecutará en desa
-        env:
-          INSIS_DEPLOY_PASSWORD: ${{ secrets.INSIS_DEPLOY_PASSWORD }}
-        run: |
-          scripts/lb.sh desa validate
-          scripts/lb.sh desa status
-          scripts/lb.sh desa update-sql
+  compuerta:
+    name: Compuerta
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-validar-pr.yml@v1
+    secrets: inherit

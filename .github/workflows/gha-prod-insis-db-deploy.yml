@@ -19,31 +19,16 @@ concurrency:
 
 jobs:
   etiquetar:
-    name: Etiquetar prod-v<versión>
+    name: Etiquetar
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Crear etiqueta
-        run: |
-          v=$(scripts/version.sh certificada "$GITHUB_SHA") \
-            || { echo "::error::El contenido de prod no corresponde a ninguna etiqueta test-v*: no pasó por test"; exit 1; }
-          tag="prod-v$v"
-          remoto=$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)
-          if [ -z "$remoto" ]; then
-            git tag "$tag" "$GITHUB_SHA" && git push origin "$tag"
-            echo "Etiqueta $tag creada en ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$remoto" = "$GITHUB_SHA" ]; then
-            echo "$tag ya apunta a este commit"
-          else
-            echo "::error::$tag ya existe en otro commit"; exit 1
-          fi
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-etiquetar.yml@v1
+    with:
+      ambiente: prod
 
   desplegar:
+    name: Desplegar
     if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/gha-shared-insis-db-deploy.yml
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar.yml@v1
     with:
       ambiente: prod
       ticket: ${{ inputs.ticket }}
