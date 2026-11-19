@@ -21,14 +21,14 @@ jobs:
   etiquetar:
     name: Etiquetar
     if: github.event_name == 'push'
-    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-etiquetar.yml@v1
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-etiquetar.yml@v2
     with:
       ambiente: prod
 
   desplegar:
     name: Desplegar
     if: github.event_name == 'workflow_dispatch'
-    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar.yml@v1
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar.yml@v2
     with:
       ambiente: prod
       ticket: ${{ inputs.ticket }}

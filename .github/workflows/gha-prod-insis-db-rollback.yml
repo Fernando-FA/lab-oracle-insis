@@ -21,7 +21,7 @@ concurrency:
 jobs:
   rollback:
     name: Rollback
-    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-rollback.yml@v1
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-rollback.yml@v2
     with:
       ticket: ${{ inputs.ticket }}
       etiqueta: ${{ inputs.etiqueta }}
