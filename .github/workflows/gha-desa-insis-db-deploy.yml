@@ -14,20 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cd:
-    name: CD · desa
-    runs-on: [self-hosted, insis-db]
-    environment: desa
-    steps:
-      - uses: actions/checkout@v4
-      - name: Desplegar
-        env:
-          INSIS_DEPLOY_PASSWORD: ${{ secrets.INSIS_DEPLOY_PASSWORD }}
-        run: |
-          scripts/lb.sh desa update
-          scripts/lb.sh desa status
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: evidencia-desa-${{ github.run_number }}
-          path: evidencia/desa/
+  desplegar:
+    name: Desplegar
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar-desa.yml@v1
+    secrets: inherit
