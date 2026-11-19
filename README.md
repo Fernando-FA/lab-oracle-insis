@@ -5,20 +5,23 @@ Pacífico Salud: ramas por ambiente (`desa` → `test` → `prod`), etiquetas en
 y aprobaciones por PR y por environment. El motor es **Liquibase** (incluido en SQLcl), que usa la tabla
 `DATABASECHANGELOG` que ya existe en cada esquema de INSIS.
 
+Este repo tiene solo lo que es del equipo de BD: los scripts de migración y la configuración de ambientes. Los
+workflows son llamadas de pocas líneas a las plantillas de DevSecOps
+([lab-devsecops-pipelines-bd](https://github.com/Fernando-FA/lab-devsecops-pipelines-bd), versión fija `@v1`), donde
+viven la compuerta, el despliegue y los scripts: un PR de este repo no puede cambiar la validación que debe pasar.
+
 ## Estructura
 
 ```
 .github/
-  workflows/
+  workflows/                          llamadas a las plantillas de DevSecOps (@v1)
     gha-pr-insis-db-validate.yml      compuerta de PRs (promoción entre ramas, nomenclatura, plan en desa)
     gha-desa-insis-db-deploy.yml      despliegue automático al integrar en desa
     gha-test-insis-db-deploy.yml      merge → etiqueta test-vX.Y.Z · Run workflow (ticket) → CI → aprobación → CD
     gha-prod-insis-db-deploy.yml      merge → etiqueta prod-vX.Y.Z · Run workflow (ticket) → CI → aprobación → CD
     gha-prod-insis-db-rollback.yml    vuelve prod a una etiqueta anterior
-    gha-shared-insis-db-deploy.yml    pasos comunes de test y prod
-  CODEOWNERS                          dueños por esquema, DDL y pipeline
+  CODEOWNERS                          dueños por esquema, DDL y workflows
 oracle-insis/
-  VERSION                             versión de la entrega (da nombre a las etiquetas)
   esquemas.txt                        orden de despliegue de los esquemas
   environment/.env.{desa,test,prod}   conexión por ambiente (sin claves)
   migrations/<ESQUEMA>/
@@ -26,8 +29,6 @@ oracle-insis/
     tables/V<n>.<m>_<US>-<desc>.sql   DDL
     scripts/V<n>.<m>_<US>-<desc>.sql  DML / configuración
     code/R_<OBJETO>.sql               paquetes, vistas: se reaplican si cambian
-scripts/                              lb.sh (Liquibase por esquema) · validar.py · documentos.sh (OPA, PRA, EPP)
-db/setup/                             base del laboratorio: PDBs DESA/TEST/PROD, esquemas, INSIS_DEPLOY por proxy
 ```
 
 ## Un script
@@ -47,8 +48,10 @@ versión anterior del objeto: al cambiar el script se actualizan juntos.
 
 ## Etiquetas
 
-- **Git:** `test-vX.Y.Z` y `prod-vX.Y.Z`, creadas al integrar en `test` y `prod`. Fijan qué se desplegó; la compuerta
-  de `prod` exige que el contenido sea el de `test-vX.Y.Z` y que ese despliegue haya terminado bien.
+- **Git:** la versión la asigna el pipeline, nadie la edita. Al integrar en `test` se crea la siguiente `test-vX.Y.0`
+  (sube el menor); al integrar en `prod` se crea `prod-vX.Y.0` con el número de la etiqueta de test que tiene el mismo
+  contenido, y falla si no hay ninguna. La compuerta y el despliegue de `prod` exigen además que esa etiqueta de test
+  se haya desplegado bien.
 - **Base:** cada despliegue registra en cada esquema una fila `tagDatabase` con el mismo nombre (autor `pipeline`,
   archivo `pipeline/etiquetas`). No se usa `liquibase tag`, que escribe en la última fila aplicada y se pierde cuando
   un esquema no tiene cambios o se reaplica un script de `code/`. `gha-prod-insis-db-rollback` vuelve a esa fila.
@@ -67,10 +70,7 @@ versión anterior del objeto: al cambiar el script se actualizan juntos.
 En el laboratorio un único usuario cumple todos los roles: los PR exigen la compuerta pero 0 revisiones (no se puede
 aprobar un PR propio) y los environments `test` y `prod` tienen como revisor al mismo usuario.
 
-## Base local
+## Laboratorio
 
-```bash
-cp .env.example .env           # completar claves
-docker compose up -d
-scripts/setup-db.sh            # PDBs, esquemas y "instalación del proveedor"
-```
+La base Oracle con las PDBs DESA/TEST/PROD y el runner están en
+[lab-insis-entorno](https://github.com/Fernando-FA/lab-insis-entorno); en Pacífico esas piezas ya existen.

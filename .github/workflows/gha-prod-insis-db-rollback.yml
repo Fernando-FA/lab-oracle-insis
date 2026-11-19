@@ -19,54 +19,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ci:
-    name: CI · plan de rollback
-    runs-on: [self-hosted, insis-db]
-    environment: prod-plan
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Verificar
-        env:
-          TICKET: ${{ inputs.ticket }}
-          TAG: ${{ inputs.etiqueta }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          [ "$GITHUB_REF" = refs/heads/prod ] || { echo "::error::Se lanza desde la rama prod"; exit 1; }
-          [[ "$TICKET" =~ ^[A-Z]{2,6}-?[0-9]{3,}$ ]] || { echo "::error::Ticket de Ivanti inválido: $TICKET"; exit 1; }
-          [[ "$TAG" =~ ^prod-v[0-9]+\.[0-9]+\.[0-9]+$ ]] && git rev-parse -q --verify "refs/tags/$TAG" >/dev/null \
-            || { echo "::error::$TAG no es una etiqueta de prod existente"; exit 1; }
-          dep=$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=prod&sha=$(git rev-parse "$TAG^{commit}")" --jq '.[0].id // empty')
-          estado=$([ -n "$dep" ] && gh api "repos/$GITHUB_REPOSITORY/deployments/$dep/statuses" --jq '.[0].state' || true)
-          [ "$estado" = success ] || { echo "::error::$TAG nunca se desplegó con éxito en prod"; exit 1; }
-      - name: SQL del rollback
-        env:
-          INSIS_DEPLOY_PASSWORD: ${{ secrets.INSIS_DEPLOY_PASSWORD }}
-          LB_SALIDA: evidencia/plan
-        run: scripts/lb.sh prod rollback-sql "${{ inputs.etiqueta }}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: plan-rollback-${{ github.run_number }}
-          path: evidencia/plan/
-
-  cd:
-    name: CD · rollback a ${{ inputs.etiqueta }}
-    needs: ci
-    runs-on: [self-hosted, insis-db]
-    environment: prod
-    steps:
-      - uses: actions/checkout@v4
-      - name: Rollback
-        env:
-          INSIS_DEPLOY_PASSWORD: ${{ secrets.INSIS_DEPLOY_PASSWORD }}
-          LB_SALIDA: evidencia/cd
-        run: |
-          scripts/lb.sh prod rollback "${{ inputs.etiqueta }}"
-          scripts/lb.sh prod status
-          echo "Rollback de prod a **${{ inputs.etiqueta }}** · ticket ${{ inputs.ticket }}" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: evidencia-rollback-${{ github.run_number }}
-          path: evidencia/cd/
+  rollback:
+    name: Rollback
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-rollback.yml@v1
+    with:
+      ticket: ${{ inputs.ticket }}
+      etiqueta: ${{ inputs.etiqueta }}
+    secrets: inherit
