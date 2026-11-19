@@ -11,5 +11,5 @@ permissions:
 jobs:
   compuerta:
     name: Compuerta
-    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-validar-pr.yml@v1
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-validar-pr.yml@v2
     secrets: inherit

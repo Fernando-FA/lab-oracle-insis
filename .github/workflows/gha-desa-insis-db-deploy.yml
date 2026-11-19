@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  deployments: read
 
 concurrency:
   group: insis-db-desa
@@ -16,5 +17,5 @@ concurrency:
 jobs:
   desplegar:
     name: Desplegar
-    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar-desa.yml@v1
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar-desa.yml@v2
     secrets: inherit

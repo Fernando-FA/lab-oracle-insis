@@ -14,7 +14,7 @@ viven la compuerta, el despliegue y los scripts: un PR de este repo no puede cam
 
 ```
 .github/
-  workflows/                          llamadas a las plantillas de DevSecOps (@v1)
+  workflows/                          llamadas a las plantillas de DevSecOps (@v2)
     gha-pr-insis-db-validate.yml      compuerta de PRs (promoción entre ramas, nomenclatura, plan en desa)
     gha-desa-insis-db-deploy.yml      despliegue automático al integrar en desa
     gha-test-insis-db-deploy.yml      merge → etiqueta test-vX.Y.Z · Run workflow (ticket) → CI → aprobación → CD
@@ -22,14 +22,16 @@ viven la compuerta, el despliegue y los scripts: un PR de este repo no puede cam
     gha-prod-insis-db-rollback.yml    vuelve prod a una etiqueta anterior
   CODEOWNERS                          dueños por esquema, DDL y workflows
 oracle-insis/
-  esquemas.txt                        orden de despliegue de los esquemas
-  environment/.env.{desa,test,prod}   conexión por ambiente (sin claves)
-  migrations/<ESQUEMA>/
+  migrations/<ESQUEMA>/               una carpeta por esquema de INSIS
     changelog.xml                     scripts del esquema en orden de ejecución
     tables/V<n>.<m>_<US>-<desc>.sql   DDL
     scripts/V<n>.<m>_<US>-<desc>.sql  DML / configuración
     code/R_<OBJETO>.sql               paquetes, vistas: se reaplican si cambian
 ```
+
+Solo se despliegan los esquemas con cambios desde el último despliegue del ambiente. Si un pase toca más de un esquema,
+van en el orden de la menor versión `V<n>.<m>` de sus scripts (las versiones no se repiten entre esquemas). La conexión
+de cada ambiente está en las variables de su environment, no en este repo.
 
 ## Un script
 
