@@ -18,7 +18,6 @@ y aprobaciones por PR y por environment. El motor es **Liquibase** (incluido en 
     gha-shared-insis-db-deploy.yml    pasos comunes de test y prod
   CODEOWNERS                          dueños por esquema, DDL y pipeline
 oracle-insis/
-  VERSION                             versión de la entrega (da nombre a las etiquetas)
   esquemas.txt                        orden de despliegue de los esquemas
   environment/.env.{desa,test,prod}   conexión por ambiente (sin claves)
   migrations/<ESQUEMA>/
@@ -26,7 +25,7 @@ oracle-insis/
     tables/V<n>.<m>_<US>-<desc>.sql   DDL
     scripts/V<n>.<m>_<US>-<desc>.sql  DML / configuración
     code/R_<OBJETO>.sql               paquetes, vistas: se reaplican si cambian
-scripts/                              lb.sh (Liquibase por esquema) · validar.py · documentos.sh (OPA, PRA, EPP)
+scripts/                              lb.sh (Liquibase por esquema) · validar.py · documentos.sh (OPA, PRA, EPP) · version.sh
 db/setup/                             base del laboratorio: PDBs DESA/TEST/PROD, esquemas, INSIS_DEPLOY por proxy
 ```
 
@@ -47,8 +46,10 @@ versión anterior del objeto: al cambiar el script se actualizan juntos.
 
 ## Etiquetas
 
-- **Git:** `test-vX.Y.Z` y `prod-vX.Y.Z`, creadas al integrar en `test` y `prod`. Fijan qué se desplegó; la compuerta
-  de `prod` exige que el contenido sea el de `test-vX.Y.Z` y que ese despliegue haya terminado bien.
+- **Git:** la versión la asigna el pipeline, nadie la edita. Al integrar en `test` se crea la siguiente `test-vX.Y.0`
+  (sube el menor); al integrar en `prod` se crea `prod-vX.Y.0` con el número de la etiqueta de test que tiene el mismo
+  contenido, y falla si no hay ninguna. La compuerta y el despliegue de `prod` exigen además que esa etiqueta de test
+  se haya desplegado bien.
 - **Base:** cada despliegue registra en cada esquema una fila `tagDatabase` con el mismo nombre (autor `pipeline`,
   archivo `pipeline/etiquetas`). No se usa `liquibase tag`, que escribe en la última fila aplicada y se pierde cuando
   un esquema no tiene cambios o se reaplica un script de `code/`. `gha-prod-insis-db-rollback` vuelve a esa fila.

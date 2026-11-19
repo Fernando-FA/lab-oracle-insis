@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
       - name: Promoción entre ramas
         env:
           BASE: ${{ github.base_ref }}
@@ -36,12 +37,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          version=$(tr -d '[:space:]' < oracle-insis/VERSION)
+          version=$(scripts/version.sh certificada "$SHA") \
+            || { echo "::error::El contenido de test no corresponde a ninguna etiqueta test-v*: no pasó por test"; exit 1; }
           tag="test-v$version"
-          git rev-parse -q --verify "refs/tags/$tag" >/dev/null \
-            || { echo "::error::No existe $tag: la versión $version no pasó por test"; exit 1; }
-          [ "$(git rev-parse "$tag^{tree}")" = "$(git rev-parse "$SHA^{tree}")" ] \
-            || { echo "::error::El contenido de test no es el de $tag"; exit 1; }
           dep=$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=test&sha=$(git rev-parse "$tag^{commit}")" --jq '.[0].id // empty')
           estado=$([ -n "$dep" ] && gh api "repos/$GITHUB_REPOSITORY/deployments/$dep/statuses" --jq '.[0].state' || true)
           [ "$estado" = success ] || { echo "::error::$tag no tiene un despliegue exitoso en test (estado: ${estado:-ninguno})"; exit 1; }
