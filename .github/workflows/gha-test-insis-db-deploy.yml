@@ -1,4 +1,4 @@
-# test: el merge crea la etiqueta test-v<VERSION>; el Ing. DevSecOps lanza el despliegue con el ticket de Ivanti.
+# test: el merge crea la etiqueta test-v<versión> (la siguiente: sube el menor); el Ing. DevSecOps lanza el despliegue con el ticket de Ivanti.
 name: gha-test-insis-db-deploy
 on:
   push:
@@ -19,27 +19,16 @@ concurrency:
 
 jobs:
   etiquetar:
-    name: Etiquetar test-v<VERSION>
+    name: Etiquetar
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Crear etiqueta
-        run: |
-          tag="test-v$(tr -d '[:space:]' < oracle-insis/VERSION)"
-          remoto=$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)
-          if [ -z "$remoto" ]; then
-            git tag "$tag" "$GITHUB_SHA" && git push origin "$tag"
-            echo "Etiqueta $tag creada en ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$remoto" = "$GITHUB_SHA" ]; then
-            echo "$tag ya apunta a este commit"
-          else
-            echo "::error::$tag ya existe en otro commit: sube oracle-insis/VERSION"; exit 1
-          fi
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-etiquetar.yml@v1
+    with:
+      ambiente: test
 
   desplegar:
+    name: Desplegar
     if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/gha-shared-insis-db-deploy.yml
+    uses: Fernando-FA/lab-devsecops-pipelines-bd/.github/workflows/bd-desplegar.yml@v1
     with:
       ambiente: test
       ticket: ${{ inputs.ticket }}

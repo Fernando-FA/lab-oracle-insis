@@ -4,6 +4,5 @@
 /oracle-insis/migrations/INSIS_GEN_CFG_V10/  @Fernando-FA
 # DDL: además Infra-DBA
 /oracle-insis/migrations/*/tables/           @Fernando-FA
-# Pipeline y herramientas: DevSecOps
+# Workflows (llamadas a las plantillas): DevSecOps
 /.github/                                    @Fernando-FA
-/scripts/                                    @Fernando-FA
